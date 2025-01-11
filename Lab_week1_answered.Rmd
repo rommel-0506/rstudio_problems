@@ -1,0 +1,216 @@
+---
+title: "Lab_week1_answered"
+author: "Rommel"
+date: "2025-01-11"
+output: html_document
+---
+Instalamos paquetes y cargamos las librerias
+```{r}
+#install.packages("devtools")
+#install.packages("dplyr")
+#install.packages("rmarkdown")
+#install.packages("ggplot2")
+#install.packages("broom")
+#install.packages("gridExtra")
+#install.packages("shiny")
+#install.packages("cubature")
+#install.packages("tidyr")
+```
+
+Más instalaciones
+```{r}
+library(devtools)
+install_github("StatsWithR/statsr")
+library(dplyr)
+library(ggplot2)
+library(statsr)
+```
+
+Para cargar los datos
+```{r}
+data("arbuthnot")
+```
+
+The Arbuthnot data set refers to Dr. John Arbuthnot, an 18th century physician, writer, and mathematician. He was interested in the ratio of newborn boys to newborn girls, so he gathered the baptism records for children born in London for every year from 1629 to 1710. We can take a look at the data by typing its name into the console.
+
+Para ver los datos y la dimensión
+```{r}
+dim(arbuthnot)
+```
+Para ver todos los datos
+```{r}
+arbuthnot
+```
+
+
+Para ver los nombres de las columnas (o variables)
+```{r}
+names(arbuthnot)
+```
+***1. How many variables are included in this data set?***
+
+- 2
+- 3
+- 4
+- 82
+- 1710
+
+***Exercise***: What years are included in this dataset? La respuesta es 3
+
+Podemos acceder a los datos de una sola columna del data frame con el siguiente comando. Esto solo muestra el número de niños bautizados cada año.
+```{r}
+arbuthnot$boys
+```
+***What command would you use to extract just the counts of girls born?***
+
+a. arbuthnot$boys
+b. arbuthnot$girls
+c. girls
+d. arbuthnot[girls]
+e. $girls
+
+La respuesta es `arbuthnot$girls`
+
+```{r}
+arbuthnot$girls
+```
+Podemos realizar una gráfica para mostrar el número de niñas bautizadas en función del año
+```{r}
+ggplot(data = arbuthnot, aes(x = year, y = girls)) +
+  geom_point()
+```
+Podemos crear una nueva variable (total = suma de niños y niñas) en una nueva columna con la función `mutate`
+```{r}
+arbuthnot <- arbuthnot %>% 
+  mutate(total = boys + girls)
+```
+
+Ahora vemos los nombreas de las variables nuevamente para verificar que existe una nueva columna y es el total
+```{r}
+names(arbuthnot)
+```
+Ahora graficamos el número total de niños bautizados por año pero con línea
+```{r}
+ggplot(data = arbuthnot, aes(x = year, y = total))+
+  geom_line()
+```
+Ahora le añadimos los puntos a la línea
+```{r}
+ggplot(data = arbuthnot, aes(x = year, y = total))+
+  geom_line()+
+  geom_point()
+```
+
+Ahora generamos una gráfica con el número de niños bautizados por año
+```{r}
+ggplot(data = arbuthnot, aes(x = year, y = boys))+
+  geom_line() + 
+  geom_point()
+```
+
+Podemos comparar si la cantidad de niños fue mayor que las niñas, y nos regresa un argumento booleano, ya sea `TRUE` o `FALSE` si se cumple el argumento, con la siguiente expresión
+```{r}
+arbuthnot <- arbuthnot %>% 
+  mutate(more_boys = boys > girls)
+```
+
+Verificamos que se añadió la columna aduecatamente
+```{r}
+arbuthnot$more_boys
+```
+En todos los casos se cumple que hubo más niñps bautizados comparado con las niñas.
+
+Realizamos nuevos análisis con una nueva base de datos, que incliye los registros de nacimientos de los Estados Unidos.
+```{r}
+data(present)
+```
+
+Verificamos el inicio de los datos con el comando `head`
+```{r}
+head(present)
+```
+
+***¿Cuántas bariables incluye el dataset?***
+La respuesta es 3. Lo observamos con el comando `names`
+```{r}
+names(present)
+```
+***¿Cuántos años incluye el dataset?***
+Lo podemos ver con la función `range`, que regresa el mínimo y el máximo
+```{r}
+range(present$year)
+```
+Calculamos el número de años haciendo la operación. 73 años
+```{r}
+2013 - 1940
+```
+Calculamos el número total de nacimientos y los almacenamos en una nuvea variable llamada `total`. 
+```{r}
+present <- present %>% 
+  mutate(total = boys + girls)
+```
+
+Luego calculamos al proporción de niños por cada años y lo guardamos en una nueva variable llamada `prop_boys`.
+```{r}
+present <- present %>% 
+  mutate(prop_boys = boys/total)
+```
+
+Graficamos la proporción de niños por año
+```{r}
+ggplot(data = present, aes(x = year, y = prop_boys)) + 
+  geom_line()+
+  geom_point()
+```
+
+***¿La proporción de niños nacidos en US ha disminuido conforme pasa el tiempo?***
+La respuesta es si
+
+Ahora creamos una nuvea variable llamada `more_boys` que contiene el valor `TRUE` si en ese año hubo más niños que niñas, o `FALSE` si no lo fue. Con base en esa variable, ¿Cuál de los siguientes afirmaciones es cierta?
+
+a. Cada año hubo más niñas que niños
+b. Cada año hubo más niños que niñas
+c. La mitad de los años hubo más niños, y la otra mitad hubo más niñas
+
+```{r}
+present <- present %>% 
+  mutate(more_boys = boys > girls)
+```
+
+Ahora vemos todos los valores de esa variable
+```{r}
+present$more_boys
+```
+
+Efectivamente, todos los años hubo más niños que niñas. Por lo que la respuesta a la pregunta anterior es la letra **b**.
+
+Ahora calculamos la proporción niños-niñas y la guardamos en una nueva variable llamada `prop_boy_girl`. 
+```{r}
+present <- present %>% 
+  mutate(prop_boy_girl = boys / girls)
+```
+
+Graficamos la proporción en función del tiempo
+```{r}
+ggplot(data = present, aes(x = year, y = prop_boy_girl)) + 
+  geom_line()+
+  geom_point()
+```
+
+Which of the following best describes the trend?
+
+a. There appears to be no trend in the boy-to-girl ratio from 1940 to 2013.
+b. There is initially an increase in boy-to-girl ratio, which peaks around 1960. After 1960 there is a decrease in the boy-to-girl ratio, but the number begins to increase in the mid 1970s.
+c. There is initially a decrease in the boy-to-girl ratio, and then an increase between 1960 and 1970, followed by a decrease.
+d. The boy-to-girl ratio has increased over time.
+e. There is an initial decrease in the boy-to-girl ratio born but this number appears to level around 1960 and remain constant since then.
+
+Considero que la respuesta correcta es la letra _c_ 
+
+***¿En qué año se vio el mayor número de nacimientos en U.S.?***
+```{r}
+present %>% 
+  arrange(desc(total))
+```
+
+El año **2007** fue el año con mayor número de nacimientos
