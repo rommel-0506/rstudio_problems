@@ -1,0 +1,312 @@
+---
+title: "Lab_week2_answered"
+author: "Rommel"
+date: "2025-01-11"
+output: html_document
+---
+---
+title: "Lab_week2_answered"
+author: "Rommel"
+date: "2025-01-11"
+output: html_document
+---
+Instalamos paquetes y cargamos las librerias
+```{r}
+#install.packages("devtools")
+#install.packages("dplyr")
+#install.packages("rmarkdown")
+#install.packages("ggplot2")
+#install.packages("broom")
+#install.packages("gridExtra")
+#install.packages("shiny")
+#install.packages("cubature")
+#install.packages("tidyr")
+```
+
+Más instalaciones
+```{r}
+library(devtools)
+install_github("StatsWithR/statsr")
+library(dplyr)
+library(ggplot2)
+library(statsr)
+```
+
+Primero cargamos los datos. 
+```{r}
+data("nycflights")
+```
+
+The [Bureau of Transportation Statistics](http://www.rita.dot.gov/bts/about/) (BTS) is a statistical agency that is a part of the Research and Innovative Technology Administration (RITA). As its name implies, BTS collects and makes available transportation data, such as the flights data we will be working with in this lab.
+
+Vemos los nombres de las variables
+```{r}
+names(nycflights)
+```
+Vemos la estructura de las variables
+```{r}
+str(nycflights)
+```
+Nos interesa saber:
+
+- ¿Cuántos retrasos suelen tener los vuelos que se dirigen a un destino en particular?
+- ¿Cómo varían los retrasos en las salidas a lo largo de los meses?
+- ¿Cuál de los tres aeropuertos principales de Nueva York tiene un mejor porcentaje de puntualdidad en los vuelos de salida?
+
+El paquete `dplyr` ofrece siete funciones para manipulación básica de datos
+
+- `filter()`
+- `arrange()`
+- `select()` 
+- `distinct()`
+- `mutate()`
+- `summarise()`
+- `sample_n()`
+
+## Análisis
+### Retrasos en la salida de vuelos hacia Raleigh-Durham (RDU)
+
+Primero examinamos la distribución de salidas de todos los vuelos con un histograma
+```{r}
+ggplot(data = nycflights, aes(x = dep_delay)) +
+  geom_histogram()
+```
+Los histogramas son generalmente buenos para ver la forma de una distribución, pero su formapuede cambiar dependiendo de como se dividen los datos en los bins. Podemos cambiar el ancho del bin 
+```{r}
+ggplot(data = nycflights, aes(x = dep_delay)) +
+  geom_histogram(binwidth = 15)
+```
+
+Diferente ancho de bin
+```{r}
+ggplot(data = nycflights, aes(x = dep_delay)) +
+  geom_histogram(binwidth = 150)
+```
+
+***¿Cómo se comparan los anchos de los bins de cada histograma?***
+
+Si queremos enfocarnos en la salida de los vuelos hacia RDU, necesitamos aplicar un filtro con la función `filter` para los datos que solo salen de RDU y hacer un histograma de esos vuelos. Así generamos un nuevo data frame con los vuelos que tienen como destino RDU
+```{r}
+rdu_flights <- nycflights %>% 
+  filter(dest == "RDU")
+```
+
+Ahora creamos el hisgorama de esos vuelos
+```{r}
+ggplot(data = rdu_flights, aes(x = dep_delay)) +
+  geom_histogram()
+```
+
+**Logical operators: ** Filtering for certain observations (e.g. flights from a 
+particular airport) is often of interest in data frames where we might want to 
+examine observations with certain characteristics separately from the rest of 
+the data. To do so we use the `filter` function and a series of 
+**logical operators**. The most commonly used logical operators for data 
+analysis are as follows:
+
+- `==` means "equal to"
+- `!=` means "not equal to"
+- `>` or `<` means "greater than" or "less than"
+- `>=` or `<=` means "greater than or equal to" or "less than or equal to"
+
+
+También podemos obtener un resumen numérico de estos vuelos
+```{r}
+rdu_flights %>% 
+  summarise(mean_dd = mean(dep_delay), sd_dd = sd(dep_delay), n = n())
+```
+Con la función `summarise` creamos un tibble de elementos; la media, la desviación estándar y el número de datos. 
+
+
+**Summary statistics: ** Some useful function calls for summary statistics for a 
+single numerical variable are as follows:
+
+- `mean`
+- `median`
+- `sd`
+- `var`
+- `IQR`
+- `range`
+- `min`
+- `max`
+
+También podemos filtrar con base en múltiples criterios. Supongamos que estamos interesados en vuelos que llegan a San Francisco (SFO) en febrero.
+```{r}
+sfo_feb_flights <- nycflights %>% 
+  filter(dest == "SFO", month == 2)
+```
+
+Note that we can separate the conditions using commas if we want flights that
+are both headed to SFO **and** in February. If we are interested in either
+flights headed to SFO **or** in February we can use the `|` instead of the comma.
+
+***¿Cuántos vuelos cumplen estos criterios?***
+```{r}
+View(sfo_feb_flights)
+```
+
+Viendo el nuevo dataframe, podemos ver que 68 vuelos cumplen con esos criterios. Realicemos un histograma para el **tiempo de retraso (arrival_delay)**
+```{r}
+ggplot(data = sfo_feb_flights, aes(x = arr_delay))+
+  geom_histogram()
+```
+
+¿Cuál se las siguientes aseveraciones es falsa?
+
+a. La dsitribución es unimodal
+b. La distribución es sesgada a la derecha
+c. No hay vuelos que se retrasen más de 2 horas
+d. Más del 50% de los vuelos llegan a tiempo o antes del horario programado
+
+Dada la forma del histograma, considero que la respuesta correcta es la **b**
+
+Otra función importante es poder calcular rápidamente un resumen de las estadísticas de varios grupos en el dataframe. POr ejemplo, podemos modificar una sección de arriba usando el comando `group_by` para obtener las estadísticas para cada aeropuerto de origen
+```{r}
+rdu_flights %>% 
+  group_by(origin) %>% 
+  summarise(mean_dd = mean(dep_delay), sd_dd = sd(dep_delay), n = n())
+```
+
+Ahora calculemos la mediana y el rango intercuartil para `arr_delay`
+```{r}
+sfo_feb_flights %>% 
+  group_by(carrier) %>% 
+  summarise(median_sfo_delay = median(arr_delay), iquartiler_sfo_delay = IQR(arr_delay))
+```
+
+¿Cuál de las aerolíneas tiene el mayor IQR de retraso de llegadas?
+La aerolínea con mayor retraso de llegadas es **Delta Airlines Inc.** y **United Airlines Inc.** con un IQR de 22.
+
+- `carrier`: Two letter carrier abbreviation.
+    + `9E`:           Endeavor Air Inc.
+    + `AA`:      American Airlines Inc.
+    + `AS`:        Alaska Airlines Inc.
+    + `B6`:             JetBlue Airways
+    + `DL`:        Delta Air Lines Inc.
+    + `EV`:    ExpressJet Airlines Inc.
+    + `F9`:      Frontier Airlines Inc.
+    + `FL`: AirTran Airways Corporation
+    + `HA`:      Hawaiian Airlines Inc.
+    + `MQ`:                   Envoy Air
+    + `OO`:       SkyWest Airlines Inc.
+    + `UA`:       United Air Lines Inc.
+    + `US`:             US Airways Inc.
+    + `VX`:              Virgin America
+    + `WN`:      Southwest Airlines Co.
+    + `YV`:          Mesa Airlines Inc.
+
+¿Cuál mes esperarías que tubiera el mayor promedio de retraso desde el aeropuerto de NYC?
+```{r}
+nycflights %>% 
+  group_by(month) %>% 
+  summarise(mean_dd = mean(dep_delay)) %>% 
+  arrange(desc(mean_dd))
+```
+Por lo tanto, el més con el promedio mayor de retraso de salida desde el aeropuerto de NYC es **julio**
+
+¿Cuál es el aeropuerto con la mayor mediana de retraso de salida desde el aeropuerto de NYC?
+```{r}
+nycflights %>% 
+  group_by(month) %>% 
+  summarise(median_dd = median(dep_delay)) %>% 
+  arrange(desc(median_dd))
+```
+
+Aparentemente el mes con mayor mediana de retraso de salida es **Diciembre**
+
+¿Es la media o la mediana una medida más confiable para decidir qué mes(es) evitar volar si realmente no te gustan los vuelos retrasados, y por qué?
+
+a. La media sería más confiable ya que nos da el promedio verdadero.
+b. La media sería más confiable ya que la distribución de los retrasos es simétrica.
+c. La mediana sería más confiable ya que la distribución de los retrasos está sesgada.
+d. La mediana sería más confiable ya que la distribución de los retrasos es simétrica.
+e. Ambos nos dan información útil
+
+Podemos visualizar la distribución de retrasos de salida de cada mes viendo un  side-by-side box plots
+```{r}
+ggplot(nycflights, aes(x = factor(month), y = dep_delay)) +
+  geom_boxplot()
+```
+Supóngase que tu vas a volar de NYC y quieres conocer cuál de los tres principales aeropuertos de NYC tiene el mejor tiempo de salida de los vuelos. Suppóngase también que, para ti, si un vuelo se retrasa menos de 5 min está básicamente _en tiempo_. Considera cualquier vuelo retrasado por 5 min o más como _retrasado_.
+
+Para determinar cuál aeropuerto tiene el mejor tiempo de salida, necesitamos:
+
+- Clasificar cada vuelo como _en tiempo_ o _retrasado_
+- Agrupar por aeropuerto de origen
+- Calcular el tiempo de salida para cada aeropuerto de origen
+- Arreglar los aeropuertos en orden descendente para el porcentaje de salida _en tiempo_
+
+Primero clasifiquemos cada vuelo como _en tiempo_ o _retrasado_ creando una nueva variable
+```{r}
+nycflights <- nycflights %>% 
+  mutate(dep_type = ifelse(dep_delay < 5, "on time", "delayed"))
+```
+
+Ahora agrupamos por aeropuerto de salida, y calculamos la proporción de vuelos que salieron _en tiempo_
+```{r}
+nycflights %>%
+  group_by(origin) %>%
+  summarise(ot_dep_rate = sum(dep_type == "on time") / n()) %>%
+  arrange(desc(ot_dep_rate))
+```
+
+Si seleccionaramos un aeropuerto basado simplemente en el porcentaje de salida _en tiempo_, cuál aeropuero de NYC elegirías para volar?
+
+- EWR
+- JFK
+- LGA
+
+Elegiríamos el LGA por un mayor porcentaje de vuelos que salen _a tiempo_
+segmented bar plot
+También podemos visualizar la porporción de salidas _en tiempo_ de los tres aeropuertos usando un segmented bar plot
+```{r}
+ggplot(data = nycflights, aes(x = origin, fill = dep_type))+
+  geom_bar()
+```
+Vamos a crear una nueva variable que contenga la velocidad promedio, `avg_speed`, a la que el avión viajó para cada vuelo (en mph). ¿Cuál es el número de vuelo con la velocidad promedio más rápida?. 
+
+```{r}
+nycflights <- nycflights %>% 
+  mutate(avg_speed = distance / (air_time/60))
+```
+
+Ahora solo seleccionamos los datos que queremos ver
+```{r}
+#nycflights %>% 
+#  select(avg_speed, tailnum) %>% 
+#  arrange(desc(avg_speed))
+```
+
+De acuerdo con `avg_speed`, el vuelo más rápido fue el **N666DN**. 
+
+Realicemos un scatterplot de `avg_speed` vs `distance`. ¿Cuál de las siguientes oraciones es verdadera acerca de la relación entre la velocidad promedio y la distancia?
+
+- A medida que aumenta la distancia, la velocidad media de los vuelos disminuye.
+- La relación es lineal.
+- Hay una asociación positiva general entre la distancia y la velocidad media.
+- No hay valores atípicos.
+- La distribución de las distancias es uniforme en un rango de 0 a 5000 millas.
+
+```{r}
+ggplot(nycflights, aes(x = distance, y = avg_speed))+
+  geom_point()
+```
+
+Considero que la respuesta correcta es que **hay una asociación positiva general entre la distancia y la velocidad media**
+
+Supóngase que defines un vuelo como _a tiempo_ si llega al destino a tiempo o antes de lo esperado, independientemente de cualquier retraso de salida. Creamos una nueva variable llamada `arr_type` con niveles `on time` y `delayed` basada en esta definición. Entonces, determina cuál es el porcentaje de llegadas _a tiempo_. ¿Qué proporción de vuelos estuvieron salieron _retrasados_ llegaron _a tiempo_?
+
+Primero clasifiquemos cada vuelo como _en tiempo_ o _retrasado_ creando una nueva variable, según el retraso de llegada (`arr_time`)
+```{r}
+nycflights <- nycflights %>% 
+  mutate(arr_type = ifelse(arr_delay < 5, "on time", "delayed"))
+```
+
+Ahora agrupamos por aeropuerto de salida, y calculamos la proporción de vuelos que salieron _en tiempo_
+```{r}
+nycflights %>%
+  group_by(dep_type) %>%
+  summarise(prop_arr_delay_rate = sum(arr_type == "on time") / n())
+```
+
+Así que la proporción de aviones que salieron retrasados y llegaron a tiempo a su destino es 0.2376582.
